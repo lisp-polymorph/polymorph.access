@@ -5,7 +5,7 @@
 
 (defun %form-type (form &optional env)
   (adhoc-polymorphic-functions::form-type form env))
-
+(deftype ind () `(integer 0 #.array-dimension-limit))
 
 
 ;;; At
@@ -33,7 +33,7 @@
 
 
 (defpolymorph-compiler-macro (setf at) (t array &rest) (new array &rest indexes &environment env)
-  (let* ((ar-type (cm:form-type array env))
+  (let* ((ar-type (%form-type array env))
          (elt-type  (cm:array-type-element-type ar-type))
          (new-type (cm:form-type new env)))
     (cond ((not (subtypep new-type elt-type env))
@@ -78,25 +78,23 @@
 
 
 
-(defpolymorph-compiler-macro at (hash-table &rest) (ht &rest indexes &environment env)
-  (let ((ht-type (print (cm:form-type ht env))))
+(defpolymorph-compiler-macro at (hash-table &rest) (&whole form ht &rest indexes &environment env)
     (if (constantp (length indexes) env)
-        (if (listp ht-type) ;; TODO this trick doesn't work unfortunately, but it might.
-            (let ((key-type (second ht-type))
-                  (val-type (third ht-type))
-                  (attempt-type (cm:form-type (car indexes) env)))
-              (if (subtypep attempt-type key-type env)
-                  `(the (values ,val-type boolean &optional)
-                        (gethash ,(first indexes) ,ht ,(second indexes)))
-                  (error 'type-error :expected-type key-type :datum (car indexes))))
-            `(gethash ,(first indexes) ,ht ,(second indexes)))
         (once-only (indexes)
-          `(apply #'gethash (first ,indexes) ,ht (cdr ,indexes))))))
-
+          `(gethash ,(first indexes) ,ht ,(second indexes)))
+        form))
 
 
 (defpolymorph (setf at) ((new t) (ht hash-table) &rest indexes) t
   (setf (apply #'gethash (first indexes) ht (cdr indexes)) new))
+
+(defpolymorph-compiler-macro (setf at) (t hash-table &rest) (&whole form
+                                                                    new ht &rest indexes
+                                                                    &environment env)
+  (if (constantp (length indexes) env)
+      (once-only (indexes)
+        `(setf (gethash ,(first indexes) ,ht ,(second indexes)) ,new))
+      form))
 
 
 ;;;Front/Back
@@ -128,7 +126,7 @@
   (aref container 0))
 
 (defpolymorph-compiler-macro front (array) (container &environment env)
-  (let* ((type (cm:form-type container env))
+  (let* ((type (%form-type container env))
          (elt-type  (cm:array-type-element-type type))
          (dim  (cm:array-type-dimensions type)))
     `(the (values ,elt-type &optional)
@@ -150,7 +148,7 @@
               (aref container (1- (length container))))
 
 (defpolymorph-compiler-macro back (array) (container &environment env)
-  (let* ((type (cm:form-type container env))
+  (let* ((type (%form-type container env))
          (elt-type  (cm:array-type-element-type type))
          (dim  (cm:array-type-dimensions type)))
     `(the (values,elt-type &optional)
@@ -198,7 +196,7 @@
     (otherwise (cl:array-total-size object))))
 
 (defpolymorph-compiler-macro size (array) (object &environment env)
-  (let* ((type (cm:form-type object env)))
+  (let* ((type (%form-type object env)))
     (cond ((subtypep type '(or vector bit-vector string) env)
            `(length ,object))    ;; TODO this can probably be improved/less ugly
           (t `(cl:array-total-size ,object)))))
@@ -210,6 +208,12 @@
 (defpolymorph size ((object list)) (values ind &optional)
   (length object))
 
+(defpolymorph capacity ((object list)) (values ind &optional)
+  (length object))
+
 
 (defpolymorph size ((object hash-table)) (values ind &optional)
   (hash-table-count object))
+
+(defpolymorph capacity ((object hash-table)) (values ind &optional)
+  (hash-table-size object))
