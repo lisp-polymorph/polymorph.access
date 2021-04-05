@@ -162,3 +162,54 @@
                    (t t))
             ,(once-only (container)
                         `(aref ,container (1- (length ,container))))))))
+
+
+
+
+;;;Emptyp
+(define-polymorphic-function emptyp (container) :overwrite t
+  :documentation "Return T if container is empty, and NIL otherwise.")
+
+(defpolymorph emptyp ((object vector)) (values boolean &optional)
+              (= 0 (cl:length object)))
+
+
+(defpolymorph emptyp ((object list)) (values boolean &optional)
+              (null object))
+
+
+(defpolymorph emptyp ((object hash-table)) (values boolean &optional)
+              (= 0 (hash-table-count object)))
+
+
+
+
+;;; Size
+(define-polymorphic-function size (continer) :overwrite t
+  :documentation "Return the size of stored data inside the container.")
+(define-polymorphic-function capacity (container) :overwrite t
+  :documentation "Return the upper limit of what can be currently
+  stored in the container.")
+;; TODO Should emptyp use it? Maybe
+
+(defpolymorph size ((object array)) (values ind &optional)
+  (typecase object
+    ((or vector bit-vector string) (cl:length object))
+    (otherwise (cl:array-total-size object))))
+
+(defpolymorph-compiler-macro size (array) (object &environment env)
+  (let* ((type (cm:form-type object env)))
+    (cond ((subtypep type '(or vector bit-vector string) env)
+           `(length ,object))    ;; TODO this can probably be improved/less ugly
+          (t `(cl:array-total-size ,object)))))
+
+
+(defpolymorph capacity ((object array)) (values ind &optional)
+  (cl:array-total-size object))
+
+(defpolymorph size ((object list)) (values ind &optional)
+  (length object))
+
+
+(defpolymorph size ((object hash-table)) (values ind &optional)
+  (hash-table-count object))
