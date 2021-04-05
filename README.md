@@ -24,7 +24,7 @@ Front and back return first and last elements of the container respectively. Bot
 ``` common-lisp
 (define-polymorphic-function emptyp (container))
 ```
-Checks is a container is empty for a user point of view. Returns boolean.
+Checks is a container is empty from a user's point of view. Returns boolean.
 
 - Size
 
