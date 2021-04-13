@@ -7,7 +7,6 @@
   (adhoc-polymorphic-functions::form-type form env))
 (deftype ind () `(integer 0 #.array-dimension-limit))
 
-
 ;;; At
 (define-polymorphic-function at (container &rest keys) :overwrite t
   :documentation "If used with array/list return the element of the container specified by the keys.
@@ -54,8 +53,8 @@
 
 (defpolymorph-compiler-macro at (list &rest) (list &rest indexes &environment env)
   (if (constantp (length indexes) env)
-      `(elt ,list ,@indexes)
-      `(apply #'elt ,list ,indexes)))
+      `(nth ,@indexes ,list)
+      `(apply #'nth ,indexes ,list)))
 
 
 
@@ -66,8 +65,8 @@
 
 (defpolymorph-compiler-macro (setf at) (t list &rest) (new list &rest indexes &environment env)
   (if (constantp (length indexes) env)
-      `(setf (elt ,list ,@indexes) ,new)
-      `(setf (apply #'elt ,list ,indexes) new)))
+      `(setf (nth ,@indexes ,list) ,new)
+      `(setf (apply #'nth ,indexes ,list) new)))
 
 
 
