@@ -47,12 +47,12 @@ for each element of SEQ as CL:ELT."
 ;;;; Lists
 
 (test list-at
-  :description "Test AT on lists."
+  "Test AT on lists."
 
   (test-at '(a b c d)))
 
 (test list-setf-at
-  :description "Test (SETF AT) on lists."
+  "Test (SETF AT) on lists."
 
   (let ((list (list 1 2 3 4)))
     (is (eq 'x (setf (at list 2) 'x)))
@@ -62,21 +62,21 @@ for each element of SEQ as CL:ELT."
     (is (equal '(a 2 x 4) list))))
 
 (test list-front
-  :description "Test FRONT on lists."
+  "Test FRONT on lists."
 
   (is (= 1 (front '(1 2 3 4 5 6))))
   (is (eq 'a (front (list 'a 'b 'c))))
   (is (equal "hello" (front (cons "hello" nil)))))
 
 (test list-back
-  :description "Test BACK on lists."
+  "Test BACK on lists."
 
   (is (= 6 (back '(1 2 3 4 5 6))))
   (is (eq 'c (back (list 'a 'b 'c))))
   (is (equal "hello" (back (cons "hello" nil)))))
 
 (test list-emptyp
-  :description "Test EMPTYP on lists."
+  "Test EMPTYP on lists."
 
   (is (emptyp nil))
   (is (emptyp (cdr '(1))))
@@ -86,7 +86,7 @@ for each element of SEQ as CL:ELT."
   (is (not (emptyp (cdr (list 1 2))))))
 
 (test list-size
-  :description "Test SIZE on lists."
+  "Test SIZE on lists."
 
   (is-every =
     (4 (size '(a b c d)))
@@ -96,7 +96,7 @@ for each element of SEQ as CL:ELT."
     (0 (size (cdr '(x))))))
 
 (test list-capacity
-  :description "Test CAPACITY on lists."
+  "Test CAPACITY on lists."
 
   (is-every =
    (0 (capacity nil))
@@ -107,27 +107,27 @@ for each element of SEQ as CL:ELT."
 ;;;; Vectors (Single-dimensional arrays)
 
 (test vector-at
-  :description "Test AT on vectors (single-dimensional arrays)."
+  "Test AT on vectors (single-dimensional arrays)."
 
   (test-at #(a b c d))
   (test-at (vector 1 2 3 4 5 6 7 8 9 10))
   (test-at (make-array 5 :initial-contents '(1 2 3 4 5))))
 
 (test vector-setf-at
-  :description "Test (SETF AT) on vectors (single-dimensional arrays)."
+  "Test (SETF AT) on vectors (single-dimensional arrays)."
 
   (let ((vec (vector 1 2 3 4)))
     (is (= 100 (setf (at vec 1) 100)))
     (is (equalp #(1 100 3 4) vec))))
 
 (test vector-front
-  :description "Test FRONT on vectors."
+  "Test FRONT on vectors."
 
   (is (eq 'a (front #(a b c d))))
   (is (= 1 (front (coerce '(1 2 3) 'vector)))))
 
 (test vector-back
-  :description "Test BACK on vectors."
+  "Test BACK on vectors."
 
   (is (eq 'e (back #(a b c d e))))
 
@@ -138,7 +138,7 @@ for each element of SEQ as CL:ELT."
     (is (= 1 (back arr)))))
 
 (test vector-emptyp
-  :description "Test EMPTYP on vectors."
+  "Test EMPTYP on vectors."
 
   (is (emptyp #()))
   (is (emptyp (vector)))
@@ -149,14 +149,14 @@ for each element of SEQ as CL:ELT."
   (is (not (emptyp (make-array 1 :initial-element 0)))))
 
 (test vector-size
-  :description "Test SIZE on vectors."
+  "Test SIZE on vectors."
 
   (is-every =
       (4 (size #(1 2 3 4)))
       (3 (size (make-array 7 :adjustable t :initial-element 0 :fill-pointer 3)))))
 
 (test vector-capacity
-  :description "Test CAPACITY on vectors."
+  "Test CAPACITY on vectors."
 
   (is-every =
     (5 (capacity #(1 2 3 4 5)))
@@ -166,7 +166,7 @@ for each element of SEQ as CL:ELT."
 ;;; Multi-dimensional Arrays
 
 (test array-at
-  :description "Test AT on multi-dimensional arrays."
+  "Test AT on multi-dimensional arrays."
 
   (is-every =
     (1 (at #2A((1 2) (3 4)) 0 0))
@@ -175,7 +175,7 @@ for each element of SEQ as CL:ELT."
     (4 (at #2A((1 2) (3 4)) 1 1))))
 
 (test array-setf-at
-  :description "Test (SETF AT) on multi-dimensional arrays."
+  "Test (SETF AT) on multi-dimensional arrays."
 
   (let ((array (make-array '(2 3) :initial-contents '((1 2 3) (4 5 6)))))
     (is (= 100 (setf (at array 0 0) 100)))
@@ -183,13 +183,13 @@ for each element of SEQ as CL:ELT."
     (is (equalp #2A((100 2 3) (4 5 200)) array))))
 
 (test array-size
-  :description "Test SIZE on multi-dimensional arrays."
+  "Test SIZE on multi-dimensional arrays."
 
   (is (= 9 (size (make-array '(3 3) :initial-contents '((1 2 3) (4 5 6) (7 8 9))))))
   (is (= 8 (size #3A(((1 2) (3 4)) ((5 6) (7 8)))))))
 
 (test array-capacity
-  :description "Test CAPACITY on multi-dimensional arrays."
+  "Test CAPACITY on multi-dimensional arrays."
 
   (is (= 9 (capacity (make-array '(3 3) :initial-contents '((1 2 3) (4 5 6) (7 8 9))))))
   (is (= 8 (capacity #3A(((1 2) (3 4)) ((5 6) (7 8)))))))
@@ -198,7 +198,7 @@ for each element of SEQ as CL:ELT."
 ;;; Hash-tables
 
 (test hash-table-at
-  :description "Test AT on hash-tables."
+  "Test AT on hash-tables."
 
   (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
     (is (= 1 (at ht 'a)))
@@ -209,7 +209,7 @@ for each element of SEQ as CL:ELT."
     (is (eq 'the-default (at ht 'not-a-key 'the-default)))))
 
 (test hash-table-setf-at
-  :description "Test (SETF AT) on hash-tables."
+  "Test (SETF AT) on hash-tables."
 
   (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
     (is (= 150 (setf (at ht 'a) 150)))
@@ -220,7 +220,7 @@ for each element of SEQ as CL:ELT."
 		   :test #'equal))))
 
 (test hash-table-emptyp
-  :description "Test EMPTYP on hash-tables."
+  "Test EMPTYP on hash-tables."
 
   (is (emptyp (make-hash-table)))
   (is (not (emptyp (alist-hash-table '((a . 1)))))))
