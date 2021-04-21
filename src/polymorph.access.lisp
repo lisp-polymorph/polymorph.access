@@ -4,7 +4,13 @@
 
 
 (defun %form-type (form &optional env)
-  (adhoc-polymorphic-functions::form-type form env))
+  (if (constantp form env)
+      (let ((val (eval form))) ;;need custom eval that defaults to sb-ext:eval-in-lexenv here)
+        (if (typep val '(or number character symbol))
+            (values `(eql ,val) t)
+            (values (type-of val) t)))
+      (adhoc-polymorphic-functions::form-type form env)))
+
 (deftype ind () `(integer 0 #.array-dimension-limit))
 
 ;;; At
@@ -216,3 +222,5 @@
 
 (defpolymorph capacity ((object hash-table)) (values ind &optional)
   (hash-table-size object))
+
+
