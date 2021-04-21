@@ -12,4 +12,20 @@
 		:serial t
 		:components
 		((:file "package")
-		 (:file "polymorph.access")))))
+		 (:file "polymorph.access"))))
+
+  :in-order-to ((asdf:test-op (asdf:test-op :polymorph.access/test))))
+
+(asdf:defsystem #:polymorph.access/test
+  :description "Unit tests for polymorph.access"
+  :license "MIT"
+  :serial t
+  :depends-on (#:polymorph.access #:fiveam)
+  :components ((:module
+		"test"
+		:serial t
+		:components
+		((:file "test"))))
+
+  :perform (test-op (o s)
+		    (uiop:symbol-call '#:polymorph.access/test '#:test-polymorph.access)))
