@@ -2,16 +2,16 @@
 
 (in-package #:polymorph.access)
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %form-type (form &optional env)
+    (if (constantp form env)
+        (let ((val (eval form))) ;;need custom eval that defaults to sb-ext:eval-in-lexenv here)
+          (if (typep val '(or number character symbol))
+              (values `(eql ,val) t)
+              (values (type-of val) t)))
+        (adhoc-polymorphic-functions::form-type form env)))
 
-(defun %form-type (form &optional env)
-  (if (constantp form env)
-      (let ((val (eval form))) ;;need custom eval that defaults to sb-ext:eval-in-lexenv here)
-        (if (typep val '(or number character symbol))
-            (values `(eql ,val) t)
-            (values (type-of val) t)))
-      (adhoc-polymorphic-functions::form-type form env)))
-
-(deftype ind () `(integer 0 #.array-dimension-limit))
+  (deftype ind () `(integer 0 #.array-dimension-limit)))
 
 ;;; At
 (define-polymorphic-function at (container &rest keys) :overwrite t
