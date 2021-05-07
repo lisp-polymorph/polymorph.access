@@ -2,17 +2,6 @@
 
 (in-package #:polymorph.access)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun %form-type (form &optional env)
-    (if (constantp form env)
-        (let ((val (eval form))) ;;need custom eval that defaults to sb-ext:eval-in-lexenv here)
-          (if (typep val '(or number character symbol))
-              (values `(eql ,val) t)
-              (values (type-of val) t)))
-        (adhoc-polymorphic-functions::primary-form-type form env)))
-
-  (deftype ind () `(integer 0 #.array-dimension-limit)))
-
 ;;; At
 (define-polymorphic-function at (container &rest keys) :overwrite t
   :documentation "If used with array/list return the element of the container specified by the keys.
@@ -25,8 +14,8 @@
   (apply #'aref array indexes))
 
 (defpolymorph-compiler-macro at (array &rest) (array &rest indexes &environment env)
-  (let* ((ar-type (%form-type array env))
-         (elt-type  (cm:array-type-element-type ar-type)))
+  (with-array-info (elt-type _) array env
+    (declare (ignorable _))
     (if (constantp (length indexes) env)
         `(the (values ,elt-type &optional) (aref ,array ,@indexes))
         `(the (values ,elt-type &optional) (apply #'aref ,array ,indexes)))))
@@ -38,17 +27,17 @@
 
 
 (defpolymorph-compiler-macro (setf at) (t array &rest) (new array &rest indexes &environment env)
-  (let* ((ar-type (%form-type array env))
-         (elt-type  (cm:array-type-element-type ar-type))
-         (new-type (cm:form-type new env)))
-    (cond ((not (subtypep new-type elt-type env))
-           (error 'type-error :expected-type elt-type :datum new))
-          ((constantp (length indexes) env)
-           `(the (values ,elt-type &optional) (setf (aref ,array ,@indexes)
-                                                    (the (values ,elt-type &optional) ,new))))
-          (t
-           `(the (values ,elt-type &optional) (setf (apply #'aref ,array ,indexes)
-                                                    (the (values ,elt-type &optional) ,new)))))))
+  (with-array-info (elt-type _) array env
+    (declare (ignorable _))
+    (let ((new-type (cm:form-type new env)))
+      (cond ((not (subtypep new-type elt-type env))
+             (error 'type-error :expected-type elt-type :datum new))
+            ((constantp (length indexes) env)
+             `(the (values ,elt-type &optional) (setf (aref ,array ,@indexes)
+                                                      (the (values ,elt-type &optional) ,new))))
+            (t
+             `(the (values ,elt-type &optional) (setf (apply #'aref ,array ,indexes)
+                                                      (the (values ,elt-type &optional) ,new))))))))
 
 
 
@@ -131,9 +120,7 @@
   (aref container 0))
 
 (defpolymorph-compiler-macro front (array) (container &environment env)
-  (let* ((type (%form-type container env))
-         (elt-type  (cm:array-type-element-type type))
-         (dim  (cm:array-type-dimensions type)))
+  (with-array-info (elt-type dim) container env
     `(the (values ,elt-type &optional)
           (progn
             ,(cond ((eql dim 'cl:*)
@@ -146,16 +133,14 @@
 (defpolymorph (setf front) ((new t) (container array)) t
   (setf (aref container 0) new))
 
-
+;; TODO add compiler macros for setf front/back
 
 (defpolymorph back ((container array)) t
               (assert (= 1 (array-rank container)))
               (aref container (1- (length container))))
 
 (defpolymorph-compiler-macro back (array) (container &environment env)
-  (let* ((type (%form-type container env))
-         (elt-type  (cm:array-type-element-type type))
-         (dim  (cm:array-type-dimensions type)))
+  (with-array-info (elt-type dim) container env
     `(the (values,elt-type &optional)
           (progn
             ,(cond ((eql dim 'cl:*)
@@ -164,7 +149,7 @@
                     (error "An array should be of rank 1"))
                    (t t))
             ,(once-only (container)
-                        `(aref ,container (1- (length ,container))))))))
+               `(aref ,container (1- (length ,container))))))))
 
 
 
