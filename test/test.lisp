@@ -2,13 +2,13 @@
 
 (defpackage #:polymorph.access/test
   (:use #:cl
-	#:fiveam
-	#:polymorph.access)
+        #:fiveam
+        #:polymorph.access)
 
   (:import-from #:alexandria
-    #:alist-hash-table
-    #:hash-table-alist
-    #:set-equal)
+                #:alist-hash-table
+                #:hash-table-alist
+                #:set-equal)
 
   (:export #:polymorph.access
            #:test-polymorph.access))
