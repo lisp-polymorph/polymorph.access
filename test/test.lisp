@@ -1,14 +1,14 @@
 ;;; Unit tests for polymorph.access
 
 (defpackage #:polymorph.access/test
-  (:use #:cl
-	#:fiveam
-	#:polymorph.access)
+  (:use #:cl)
+  #:fiveam
+  #:polymorph.access
 
   (:import-from #:alexandria
-		#:alist-hash-table
-		#:hash-table-alist
-		#:set-equal)
+    #:alist-hash-table
+    #:hash-table-alist
+    #:set-equal)
 
   (:export #:polymorph.access
            #:test-polymorph.access))
@@ -38,9 +38,9 @@ for each element of SEQ as CL:ELT."
      for item-at = (at seq i)
 
      always
-       (is (funcall test item-at item-elt)
-	   "(AT ~a ~a) returned: ~a~%Expected: ~a"
-	   seq i item-at item-elt)))
+       (is (funcall test item-at item-elt))
+     "(AT ~a ~a) returned: ~a~%Expected: ~a"
+     seq i item-at item-elt))
 
 ;;; Tests
 
@@ -212,8 +212,8 @@ for each element of SEQ as CL:ELT."
       "Test (SETF AT) on hash-tables."
 
       (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-        (is (= 150 (setf (at-safe ht 'a) 150)))
-        (is (= 200 (setf (at-safe ht 'new-key) 200)))
+        (is (= 150 (setf* (at-safe ht 'a) 150)))
+        (is (= 200 (setf* (at-safe ht 'new-key) 200)))
 
         (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
                        (hash-table-alist ht)
