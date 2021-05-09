@@ -1,9 +1,9 @@
 ;;; Unit tests for polymorph.access
 
 (defpackage #:polymorph.access/test
-  (:use #:cl)
-  #:fiveam
-  #:polymorph.access
+  (:use #:cl
+	#:fiveam
+	#:polymorph.access)
 
   (:import-from #:alexandria
     #:alist-hash-table
