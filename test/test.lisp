@@ -198,26 +198,26 @@ for each element of SEQ as CL:ELT."
 ;;; Hash-tables
 
 (test hash-table-at
-  "Test AT on hash-tables."
+      "Test AT on hash-tables."
 
-  (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-    (is (= 1 (at ht 'a)))
-    (is (= 2 (at ht 'b)))
-    (is (= 3 (at ht 'c)))
+      (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
+        (is (= 1 (at-safe ht 'a)))
+        (is (= 2 (at-safe ht 'b)))
+        (is (= 3 (at-safe ht 'c)))
 
-    (is (eq nil (at ht 'not-a-key)))
-    (is (eq 'the-default (at ht 'not-a-key 'the-default)))))
+        (is (eq nil (at-safe ht 'not-a-key)))
+        (is (eq 'the-default (at-safe ht 'not-a-key 'the-default)))))
 
 (test hash-table-setf-at
-  "Test (SETF AT) on hash-tables."
+      "Test (SETF AT) on hash-tables."
 
-  (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-    (is (= 150 (setf (at ht 'a) 150)))
-    (is (= 200 (setf (at ht 'new-key) 200)))
+      (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
+        (is (= 150 (setf (at-safe ht 'a) 150)))
+        (is (= 200 (setf (at-safe ht 'new-key) 200)))
 
-    (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
-		   (hash-table-alist ht)
-		   :test #'equal))))
+        (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
+                       (hash-table-alist ht)
+                       :test #'equal))))
 
 (test hash-table-emptyp
   "Test EMPTYP on hash-tables."
