@@ -1,9 +1,9 @@
 ;;; Unit tests for polymorph.access
 
 (defpackage #:polymorph.access/test
-  (:use #:cl)
-  #:fiveam
-  #:polymorph.access
+  (:use #:cl
+	#:fiveam
+	#:polymorph.access)
 
   (:import-from #:alexandria
     #:alist-hash-table
@@ -38,9 +38,9 @@ for each element of SEQ as CL:ELT."
      for item-at = (at seq i)
 
      always
-       (is (funcall test item-at item-elt))
-     "(AT ~a ~a) returned: ~a~%Expected: ~a"
-     seq i item-at item-elt))
+       (is (funcall test item-at item-elt)
+	   "(AT ~a ~a) returned: ~a~%Expected: ~a"
+	   seq i item-at item-elt)))
 
 ;;; Tests
 
