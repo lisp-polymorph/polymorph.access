@@ -33,14 +33,14 @@
 for each element of SEQ as CL:ELT."
 
   (loop
-     for i below (length seq)
-     for item-elt = (elt seq i)
-     for item-at = (at seq i)
+        for i below (length seq)
+        for item-elt = (elt seq i)
+        for item-at = (at seq i)
 
-     always
-       (is (funcall test item-at item-elt)
-	   "(AT ~a ~a) returned: ~a~%Expected: ~a"
-	   seq i item-at item-elt)))
+        always
+        (is (funcall test item-at item-elt)
+            "(AT ~a ~a) returned: ~a~%Expected: ~a"
+            seq i item-at item-elt)))
 
 ;;; Tests
 
