@@ -107,11 +107,11 @@ for each element of SEQ as CL:ELT."
 ;;;; Vectors (Single-dimensional arrays)
 
 (test vector-at
-  "Test AT on vectors (single-dimensional arrays)."
+      "Test AT on vectors (single-dimensional arrays)."
 
-  (test-at #(a b c d))
-  (test-at (vector 1 2 3 4 5 6 7 8 9 10))
-  (test-at (make-array 5 :initial-contents '(1 2 3 4 5))))
+      (test-at #(a b c d))
+      (test-at (vector 1 2 3 4 5 6 7 8 9 10))
+      (test-at (make-array 5 :initial-contents '(1 2 3 4 5))))
 
 (test vector-setf-at
   "Test (SETF AT) on vectors (single-dimensional arrays)."
@@ -201,26 +201,26 @@ for each element of SEQ as CL:ELT."
       "Test AT on hash-tables."
 
       (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-        (is (= 1 (at-safe ht 'a)))
-        (is (= 2 (at-safe ht 'b)))
-        (is (= 3 (at-safe ht 'c)))
+        (is (= 1 (at ht 'a)))
+        (is (= 2 (at ht 'b)))
+        (is (= 3 (at ht 'c)))
 
-        (is (eq nil (at-safe ht 'not-a-key)))
-        (is (eq 'the-default (at-safe ht 'not-a-key 'the-default)))))
+        (is (eq nil (at ht 'not-a-key)))))
+        ;(is (eq 'the-default (at ht 'not-a-key 'the-default)))))
 
 (test hash-table-setf-at
       "Test (SETF AT) on hash-tables."
 
       (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-        (is (= 150 (setf* (at-safe ht 'a) 150)))
-        (is (= 200 (setf* (at-safe ht 'new-key) 200)))
+        (is (= 150 (setf* (at ht 'a) 150)))
+        (is (= 200 (setf* (at ht 'new-key) 200)))
 
         (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
                        (hash-table-alist ht)
                        :test #'equal))))
 
 (test hash-table-emptyp
-  "Test EMPTYP on hash-tables."
+      "Test EMPTYP on hash-tables."
 
-  (is (emptyp (make-hash-table)))
-  (is (not (emptyp (alist-hash-table '((a . 1)))))))
+      (is (emptyp (make-hash-table)))
+      (is (not (emptyp (alist-hash-table '((a . 1)))))))
