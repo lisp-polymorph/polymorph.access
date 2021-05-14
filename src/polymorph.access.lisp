@@ -406,10 +406,10 @@
   (cl:array-total-size object))
 
 (defpolymorph size ((object list)) (values ind &optional)
-  (length object))
+  (cl:list-length object))
 
 (defpolymorph capacity ((object list)) (values ind &optional)
-  (length object))
+  (cl:list-length object))
 
 
 (defpolymorph size ((object hash-table)) (values ind &optional)
