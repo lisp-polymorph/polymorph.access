@@ -394,16 +394,12 @@
   stored in the container.")
 ;; TODO Should emptyp use it? Maybe
 
-(defpolymorph size ((object array)) (values ind &optional)
-  (typecase object
-    ((or vector bit-vector string) (cl:length object))
-    (otherwise (cl:array-total-size object))))
 
-(defpolymorph-compiler-macro size (array) (object &environment env)
-  (let* ((type (%form-type object env)))
-    (cond ((subtypep type '(or vector bit-vector string) env)
-           `(length ,object))    ;; TODO this can probably be improved/less ugly
-          (t `(cl:array-total-size ,object)))))
+(defpolymorph size ((object array)) (values ind &optional)
+  (cl:array-total-size object))
+
+(defpolymorph size ((object (or vector bit-vector string))) (values ind &optional)
+  (cl:length object))
 
 
 (defpolymorph capacity ((object array)) (values ind &optional)
