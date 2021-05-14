@@ -5,7 +5,7 @@
 (define-polymorphic-function at (container &rest keys))
 (define-polymorphic-function (setf at) (new container &rest keys))
 ```
-Accessor to the containers, similar to `[]` in C-like languages. Works for arbitrary kyes as well as multiple indexes. Is SETFable.
+Accessor to the containers, similar to `[]` in C-like languages. Works for arbitrary keys as well as multiple indexes. Is SETFable. Has an `:error` option, which is on by default for arrays/lists and off for hash-tables. With `:error t` will error for non existent keys, with `:error nil` will not error and just return two values, second of which indicates if the key was valid.
 
 
 - Front/Back
