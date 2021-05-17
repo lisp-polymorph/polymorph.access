@@ -6,7 +6,7 @@
   :license  "CCA"
   :version "0.5"
   :serial t
-  :depends-on (#:adhoc-polymorphic-functions #:compiler-macro #:polymorph.utility)
+  :depends-on (#:polymorph.utility)
   :components ((:module
                 "src"
                 :serial t

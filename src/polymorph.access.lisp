@@ -305,6 +305,20 @@
 
 
 
+(define-polymorphic-function row-major-at (container key) :overwrite t
+  :documentation "Typed row-major-aref.")
+(define-polymorphic-function (setf row-major-at) (new container key) :overwrite t
+  :documentation "Setf for row-majpr-at.")
+
+(defpolymorph (row-major-at :inline t) ((array array) (index ind)) t
+   (row-major-aref array index))
+
+(defpolymorph-compiler-macro row-major-at (array ind) (array index &environment env)
+  (with-array-info (elt-type _) array env
+    (declare (ignorable _))
+    `(the ,elt-type (cl:row-major-aref ,array ,index))))
+
+
 ;;;Front/Back
 (define-polymorphic-function back (container) :overwrite t
   :documentation "Return last element of the container.")
