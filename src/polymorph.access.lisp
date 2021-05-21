@@ -353,7 +353,7 @@
           (progn
             ,(cond ((eql dim 'cl:*)
                     (warn "An array should be of rank 1"))
-                   ((> 1 (length dim))
+                   ((< 1 (length dim))
                     (error "An array should be of rank 1")) ;;FIXME this doesn't trigger
                    (t t)) ;;instead sbcl check the aref against dimensions
             (aref ,container 0)))))                         ;; Not great, not terrible
@@ -373,7 +373,7 @@
           (progn
             ,(cond ((eql dim 'cl:*)
                     (warn "An array should be of rank 1"))
-                   ((> 1 (length dim))
+                   ((< 1 (length dim))
                     (error "An array should be of rank 1"))
                    (t t))
             ,(once-only (container)
