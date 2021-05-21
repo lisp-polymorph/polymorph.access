@@ -409,7 +409,7 @@
 ;; TODO Should emptyp use it? Maybe
 
 
-(defpolymorph size ((object (and array (not vector)))) (values ind &optional)
+(defpolymorph size ((object (and array (not vector) (not bit-vector)))) (values ind &optional)
   (cl:array-total-size object))
 
 (defpolymorph size ((object (or vector bit-vector string))) (values ind &optional)
