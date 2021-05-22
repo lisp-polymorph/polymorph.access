@@ -17,7 +17,7 @@
 
 ;;; Utilities
 
-(defvar *test-levels*
+(defparameter *test-levels*
   '((normal (speed 1) (safety 1) (space 1) (debug 1))
     (fast (speed 3) (safety 0) (debug 0)))
 
