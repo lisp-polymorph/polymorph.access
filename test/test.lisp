@@ -1,18 +1,5 @@
 ;;; Unit tests for polymorph.access
 
-(defpackage #:polymorph.access/test
-  (:use #:cl
-        #:fiveam
-        #:polymorph.access)
-
-  (:import-from #:alexandria
-                #:alist-hash-table
-                #:hash-table-alist
-                #:set-equal)
-
-  (:export #:polymorph.access
-           #:test-polymorph.access))
-
 (in-package #:polymorph.access/test)
 
 ;;; Test suite definition
@@ -25,33 +12,16 @@
 (defun test-polymorph.access ()
   (run! 'polymorph.access))
 
-
-;;; Utilities
-
-(defun test-at (seq &key (test #'equal))
-  "Test that AT returns the same value, by comparison function TEST
-for each element of SEQ as CL:ELT."
-
-  (loop
-        for i below (length seq)
-        for item-elt = (elt seq i)
-        for item-at = (at seq i)
-
-        always
-        (is (funcall test item-at item-elt)
-            "(AT ~a ~a) returned: ~a~%Expected: ~a"
-            seq i item-at item-elt)))
-
 ;;; Tests
 
 ;;;; Lists
 
-(test list-at
+(test-optimize list-at
   "Test AT on lists."
 
   (test-at '(a b c d)))
 
-(test list-setf-at
+(test-optimize list-setf-at
   "Test (SETF AT) on lists."
 
   (let ((list (list 1 2 3 4)))
@@ -61,21 +31,21 @@ for each element of SEQ as CL:ELT."
     (is (eq 'a (setf (at list 0) 'a)))
     (is (equal '(a 2 x 4) list))))
 
-(test list-front
+(test-optimize list-front
   "Test FRONT on lists."
 
   (is (= 1 (front '(1 2 3 4 5 6))))
   (is (eq 'a (front (list 'a 'b 'c))))
   (is (equal "hello" (front (cons "hello" nil)))))
 
-(test list-back
+(test-optimize list-back
   "Test BACK on lists."
 
   (is (= 6 (back '(1 2 3 4 5 6))))
   (is (eq 'c (back (list 'a 'b 'c))))
   (is (equal "hello" (back (cons "hello" nil)))))
 
-(test list-emptyp
+(test-optimize list-emptyp
   "Test EMPTYP on lists."
 
   (is (emptyp nil))
@@ -85,7 +55,7 @@ for each element of SEQ as CL:ELT."
   (is (not (emptyp '(1 2 3))))
   (is (not (emptyp (cdr (list 1 2))))))
 
-(test list-size
+(test-optimize list-size
   "Test SIZE on lists."
 
   (is-every =
@@ -95,38 +65,38 @@ for each element of SEQ as CL:ELT."
     (0 (size nil))
     (0 (size (cdr '(x))))))
 
-(test list-capacity
+(test-optimize list-capacity
   "Test CAPACITY on lists."
 
   (is-every =
-   (0 (capacity nil))
-   (5 (capacity '(1 2 3 4 5)))
-   (3 (capacity (list 1 2 3)))))
+    (0 (capacity nil))
+    (5 (capacity '(1 2 3 4 5)))
+    (3 (capacity (list 1 2 3)))))
 
 
 ;;;; Vectors (Single-dimensional arrays)
 
-(test vector-at
-      "Test AT on vectors (single-dimensional arrays)."
+(test-optimize vector-at
+  "Test AT on vectors (single-dimensional arrays)."
 
-      (test-at #(a b c d))
-      (test-at (vector 1 2 3 4 5 6 7 8 9 10))
-      (test-at (make-array 5 :initial-contents '(1 2 3 4 5))))
+  (test-at #(a b c d))
+  (test-at (vector 1 2 3 4 5 6 7 8 9 10))
+  (test-at (make-array 5 :initial-contents '(1 2 3 4 5))))
 
-(test vector-setf-at
+(test-optimize vector-setf-at
   "Test (SETF AT) on vectors (single-dimensional arrays)."
 
   (let ((vec (vector 1 2 3 4)))
     (is (= 100 (setf (at vec 1) 100)))
     (is (equalp #(1 100 3 4) vec))))
 
-(test vector-front
+(test-optimize vector-front
   "Test FRONT on vectors."
 
   (is (eq 'a (front #(a b c d))))
   (is (= 1 (front (coerce '(1 2 3) 'vector)))))
 
-(test vector-back
+(test-optimize vector-back
   "Test BACK on vectors."
 
   (is (eq 'e (back #(a b c d e))))
@@ -137,7 +107,7 @@ for each element of SEQ as CL:ELT."
 
     (is (= 1 (back arr)))))
 
-(test vector-emptyp
+(test-optimize vector-emptyp
   "Test EMPTYP on vectors."
 
   (is (emptyp #()))
@@ -148,14 +118,14 @@ for each element of SEQ as CL:ELT."
   (is (not (emptyp (vector 'a 'b 'c 'd 'e 'f))))
   (is (not (emptyp (make-array 1 :initial-element 0)))))
 
-(test vector-size
+(test-optimize vector-size
   "Test SIZE on vectors."
 
   (is-every =
-      (4 (size #(1 2 3 4)))
-      (3 (size (make-array 7 :adjustable t :initial-element 0 :fill-pointer 3)))))
+    (4 (size #(1 2 3 4)))
+    (3 (size (make-array 7 :adjustable t :initial-element 0 :fill-pointer 3)))))
 
-(test vector-capacity
+(test-optimize vector-capacity
   "Test CAPACITY on vectors."
 
   (is-every =
@@ -165,7 +135,7 @@ for each element of SEQ as CL:ELT."
 
 ;;; Multi-dimensional Arrays
 
-(test array-at
+(test-optimize array-at
   "Test AT on multi-dimensional arrays."
 
   (is-every =
@@ -174,7 +144,7 @@ for each element of SEQ as CL:ELT."
     (3 (at #2A((1 2) (3 4)) 1 0))
     (4 (at #2A((1 2) (3 4)) 1 1))))
 
-(test array-setf-at
+(test-optimize array-setf-at
   "Test (SETF AT) on multi-dimensional arrays."
 
   (let ((array (make-array '(2 3) :initial-contents '((1 2 3) (4 5 6)))))
@@ -182,13 +152,13 @@ for each element of SEQ as CL:ELT."
     (is (= 200 (setf (at array 1 2) 200)))
     (is (equalp #2A((100 2 3) (4 5 200)) array))))
 
-(test array-size
+(test-optimize array-size
   "Test SIZE on multi-dimensional arrays."
 
   (is (= 9 (size (make-array '(3 3) :initial-contents '((1 2 3) (4 5 6) (7 8 9))))))
   (is (= 8 (size #3A(((1 2) (3 4)) ((5 6) (7 8)))))))
 
-(test array-capacity
+(test-optimize array-capacity
   "Test CAPACITY on multi-dimensional arrays."
 
   (is (= 9 (capacity (make-array '(3 3) :initial-contents '((1 2 3) (4 5 6) (7 8 9))))))
@@ -197,30 +167,30 @@ for each element of SEQ as CL:ELT."
 
 ;;; Hash-tables
 
-(test hash-table-at
-      "Test AT on hash-tables."
+(test-optimize hash-table-at
+  "Test AT on hash-tables."
 
-      (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-        (is (= 1 (at ht 'a)))
-        (is (= 2 (at ht 'b)))
-        (is (= 3 (at ht 'c)))
+  (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
+    (is (= 1 (at ht 'a)))
+    (is (= 2 (at ht 'b)))
+    (is (= 3 (at ht 'c)))
 
-        (is (eq nil (at ht 'not-a-key)))))
-        ;(is (eq 'the-default (at ht 'not-a-key 'the-default)))))
+    (is (eq nil (at ht 'not-a-key)))))
+					;(is (eq 'the-default (at ht 'not-a-key 'the-default)))))
 
-(test hash-table-setf-at
-      "Test (SETF AT) on hash-tables."
+(test-optimize hash-table-setf-at
+  "Test (SETF AT) on hash-tables."
 
-      (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-        (is (= 150 (setf* (at ht 'a) 150)))
-        (is (= 200 (setf* (at ht 'new-key) 200)))
+  (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
+    (is (= 150 (setf* (at ht 'a) 150)))
+    (is (= 200 (setf* (at ht 'new-key) 200)))
 
-        (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
-                       (hash-table-alist ht)
-                       :test #'equal))))
+    (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
+                   (hash-table-alist ht)
+                   :test #'equal))))
 
-(test hash-table-emptyp
-      "Test EMPTYP on hash-tables."
+(test-optimize hash-table-emptyp
+  "Test EMPTYP on hash-tables."
 
-      (is (emptyp (make-hash-table)))
-      (is (not (emptyp (alist-hash-table '((a . 1)))))))
+  (is (emptyp (make-hash-table)))
+  (is (not (emptyp (alist-hash-table '((a . 1)))))))
