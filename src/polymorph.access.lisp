@@ -5,7 +5,10 @@
 
 (defmacro setf* (place val &environment env)
   (if (symbolp place)
-      `(setq ,place ,val)
+      (progn
+        (if (subtypep (%form-type val env) (%form-type place env) env)
+            `(setq ,place ,val)
+            (error "Changing type of the variables is prohibited"))
        (multiple-value-bind (temps exprs stores store-expr access-expr)
            (get-setf-expansion place env)
          ;(print store-expr) (print temps) (print exprs) (print stores) (print access-expr)
@@ -18,7 +21,7 @@
                 ,store-expr)
              `(let* ((,@stores ,val))
                 (declare (type ,(%form-type val env) ,@stores))
-                ,store-expr)))))
+                ,store-expr))))))
 
 
 ;;; At
