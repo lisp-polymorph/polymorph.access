@@ -5,23 +5,21 @@
 
 (defmacro setf* (place val &environment env)
   (if (symbolp place)
-      (progn
-        (if (subtypep (%form-type val env) (%form-type place env) env)
-            `(setq ,place ,val)
-            (error "Changing type of the variables is prohibited"))
-       (multiple-value-bind (temps exprs stores store-expr access-expr)
-           (get-setf-expansion place env)
-         ;(print store-expr) (print temps) (print exprs) (print stores) (print access-expr)
-         (declare (ignorable access-expr))
-         (if temps
-             `(let* ((,@temps ,@exprs)
-                     (,@stores ,val))
-                (declare (type ,(%form-type (car exprs) env) ,@temps)
-                         (type ,(%form-type val env) ,@stores))
-                ,store-expr)
-             `(let* ((,@stores ,val))
-                (declare (type ,(%form-type val env) ,@stores))
-                ,store-expr))))))
+      (if (subtypep (%form-type val env) (%form-type place env) env)
+          `(setq ,place ,val)
+          (error "Changing type of the variables is prohibited"))
+      (multiple-value-bind (temps exprs stores store-expr access-expr)
+          (get-setf-expansion place env)
+        (declare (ignorable access-expr))
+        (if temps
+            `(let* ((,@temps ,@exprs)
+                    (,@stores ,val))
+               (declare (type ,(%form-type (car exprs) env) ,@temps)
+                        (type ,(%form-type val env) ,@stores))
+               ,store-expr)
+            `(let* ((,@stores ,val))
+               (declare (type ,(%form-type val env) ,@stores))
+               ,store-expr)))))
 
 
 ;;; At
