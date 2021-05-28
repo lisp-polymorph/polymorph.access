@@ -9,5 +9,4 @@
            #:back
            #:size
            #:capacity
-           #:emptyp
-           #:setf*))
+           #:emptyp))
