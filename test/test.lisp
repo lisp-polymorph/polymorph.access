@@ -182,8 +182,8 @@
   "Test (SETF AT) on hash-tables."
 
   (let ((ht (alist-hash-table '((a . 1) (b . 2) (c . 3)))))
-    (is (= 150 (setf* (at ht 'a) 150)))
-    (is (= 200 (setf* (at ht 'new-key) 200)))
+    (is (= 150 (setf (at ht 'a) 150)))
+    (is (= 200 (setf (at ht 'new-key) 200)))
 
     (is (set-equal '((a . 150) (b . 2) (c . 3) (new-key . 200))
                    (hash-table-alist ht)
