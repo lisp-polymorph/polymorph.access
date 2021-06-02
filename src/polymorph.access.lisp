@@ -8,7 +8,7 @@
 (define-polymorphic-function at (container &rest keys) :overwrite t
   :documentation "Return the element of the container specified by the keys.")
 (define-polymorphic-function (setf at) (new container &rest keys) :overwrite t
-  :documentation "Setf for at.")
+  :documentation "Setf the element of the container, specified by the keys, to new.")
 
 
 (defpolymorph (at :inline t) ((array array) &rest indexes) (values t &optional boolean)
@@ -308,9 +308,9 @@
 (define-polymorphic-function front (container) :overwrite t
   :documentation "Return first of the container.")
 (define-polymorphic-function (setf front) (new container) :overwrite t
-  :documentation "Setf for front. Use return value of front if needed.")
+  :documentation "Setf the first element of the containter to new.")
 (define-polymorphic-function (setf back) (new container) :overwrite t
-  :documentation "Setf for back. Use return value of back if needed.")
+  :documentation "Setf the last element of the container to new.")
 
 (defpolymorph front ((container list)) t
   (first container))
