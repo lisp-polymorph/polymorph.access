@@ -3,6 +3,7 @@
 (defpackage #:polymorph.access/test
   (:use #:cl
         #:fiveam
+        #:polymorph.macros
         #:polymorph.access)
 
   (:import-from #:alexandria
