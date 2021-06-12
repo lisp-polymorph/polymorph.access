@@ -28,23 +28,23 @@
 
 
 (defpolymorph-compiler-macro at (array &rest) (&whole form array &rest indexes &environment env)
-  (with-array-info (elt-type _) array env
-    (declare (ignorable _))
-    (if (constantp (length indexes) env)
-        (let ((error-policy (member :error indexes)))
+  (with-type-info (_ (array-type elt-type) env) array
+    (when-types ((array-type array)) form
+      (if (constantp (length indexes) env)
+          (let ((error-policy (member :error indexes)))
 
-          (if error-policy
-               (let ((indexes (butlast (butlast indexes))))
-                 (if (second error-policy)
-                     `(the (values ,elt-type &optional)
-                           (aref ,array ,@indexes))
-                     `(the (values (or ,elt-type null) boolean &optional)
-                           (if (array-in-bounds-p ,array ,@indexes)
-                               (values (aref ,array ,@indexes) t)
-                               (values nil nil)))))
-               `(the (values ,elt-type &optional) (aref ,array ,@indexes))))
+            (if error-policy
+                (let ((indexes (butlast (butlast indexes))))
+                  (if (second error-policy)
+                      `(the (values ,elt-type &optional)
+                            (aref ,array ,@indexes))
+                      `(the (values (or ,elt-type null) boolean &optional)
+                            (if (array-in-bounds-p ,array ,@indexes)
+                                (values (aref ,array ,@indexes) t)
+                                (values nil nil)))))
+                `(the (values ,elt-type &optional) (aref ,array ,@indexes))))
 
-        `(the (values (or ,elt-type null) &optional boolean) ,form))))
+          `(the (values (or ,elt-type null) &optional boolean) ,form)))))
 
 
 (defpolymorph ((setf at) :inline t) ((new t) (array array) &rest indexes) (values t &optional boolean)
@@ -65,28 +65,28 @@
 (defpolymorph-compiler-macro (setf at) (t array &rest) (&whole form
                                                                new array &rest indexes
                                                                &environment env)
-  (with-array-info (elt-type _) array env
-    (declare (ignorable _))
-    (let ((new-type (%form-type new env)))
-      (cond ((not (subtypep new-type elt-type env))
-             (error 'type-error :expected-type elt-type :datum new))
+  (with-type-info (_ (array-type elt-type) env) array
+    (when-types ((array-type array)) form
+      (let ((new-type (with-type-info (type () env) new type)))
+        (cond ((not (subtypep new-type elt-type env))
+               (error 'type-error :expected-type elt-type :datum new))
 
-            ((constantp (length indexes) env)
-             (let ((error-policy (member :error indexes)))
-               (if error-policy
-                   (let ((indexes (butlast (butlast indexes))))
-                     (if (second error-policy)
-                         `(the (values ,elt-type &optional)
-                               (funcall #'(setf aref) ,new ,array ,@indexes))
-                         `(the (values (or ,elt-type null) boolean &optional)
-                               (if (array-in-bounds-p ,array ,@indexes)
-                                   (values (funcall #'(setf aref) ,new ,array ,@indexes) t)
-                                   (values nil nil)))))
-                   `(the (values ,elt-type &optional)
-                         (funcall #'(setf aref) ,new ,array ,@indexes)))))
+              ((constantp (length indexes) env)
+               (let ((error-policy (member :error indexes)))
+                 (if error-policy
+                     (let ((indexes (butlast (butlast indexes))))
+                       (if (second error-policy)
+                           `(the (values ,elt-type &optional)
+                                 (funcall #'(setf aref) ,new ,array ,@indexes))
+                           `(the (values (or ,elt-type null) boolean &optional)
+                                 (if (array-in-bounds-p ,array ,@indexes)
+                                     (values (funcall #'(setf aref) ,new ,array ,@indexes) t)
+                                     (values nil nil)))))
+                     `(the (values ,elt-type &optional)
+                           (funcall #'(setf aref) ,new ,array ,@indexes)))))
 
-            (t
-             `(the (values (or ,elt-type null) &optional boolean) ,form))))))
+              (t
+               `(the (values (or ,elt-type null) &optional boolean) ,form)))))))
 
 
 
@@ -276,15 +276,16 @@
 
 
 (define-setf-expander at (container &rest indexes &environment env)
-  (multiple-value-bind (dummies vals newval setter getter)
-      (get-setf-expansion container env)
-    (declare (ignorable setter))
-    (values dummies
-            vals
-            newval
-            `(funcall #'(setf at) ,@newval
-                      (the ,(%form-type container env) ,getter) ,@indexes)
-            `(at (the ,(%form-type container env) ,getter) ,@indexes))))
+  (with-type-info (container-type () env) container
+    (multiple-value-bind (dummies vals newval setter getter)
+        (get-setf-expansion container env)
+      (declare (ignorable setter))
+      (values dummies
+              vals
+              newval
+              `(funcall #'(setf at) ,@newval
+                        (the ,container-type ,getter) ,@indexes)
+              `(at (the ,container-type ,getter) ,@indexes)))))
 
 
 
@@ -296,10 +297,10 @@
 (defpolymorph (row-major-at :inline t) ((array array) (index ind)) t
    (row-major-aref array index))
 
-(defpolymorph-compiler-macro row-major-at (array ind) (array index &environment env)
-  (with-array-info (elt-type _) array env
-    (declare (ignorable _))
-    `(the ,elt-type (cl:row-major-aref ,array ,index))))
+(defpolymorph-compiler-macro row-major-at (array ind) (&whole form array index &environment env)
+  (with-type-info (_ (array-type elt-type) env) array
+    (when-types ((array-type array)) form
+      `(the ,elt-type (cl:row-major-aref ,array ,index)))))
 
 
 ;;;Front/Back
@@ -330,16 +331,17 @@
   (assert (= 1 (array-rank container)))
   (aref container 0))
 
-(defpolymorph-compiler-macro front (array) (container &environment env)
-  (with-array-info (elt-type dim) container env
-    `(the (values ,elt-type &optional)
-          (progn
-            ,(cond ((eql dim 'cl:*)
-                    (warn "An array should be of rank 1"))
-                   ((< 1 (length dim))
-                    (error "An array should be of rank 1")) ;;FIXME this doesn't trigger
-                   (t t)) ;;instead sbcl check the aref against dimensions
-            (aref ,container 0)))))                         ;; Not great, not terrible
+(defpolymorph-compiler-macro front (array) (&whole form container &environment env)
+  (with-type-info (_ (array-type elt-type dim) env) container
+    (when-types ((array-type array)) form
+      `(the (values ,elt-type &optional)
+            (progn
+              ,(cond ((eql dim 'cl:*)
+                      (warn "An array should be of rank 1"))
+                     ((< 1 (length dim))
+                      (error "An array should be of rank 1")) ;;FIXME this doesn't trigger
+                     (t t)) ;;instead sbcl check the aref against dimensions
+              (aref ,container 0))))))                         ;; Not great, not terrible
 
 (defpolymorph (setf front) ((new t) (container array)) t
   (setf (aref container 0) new))
@@ -350,17 +352,18 @@
               (assert (= 1 (array-rank container)))
               (aref container (1- (length container))))
 
-(defpolymorph-compiler-macro back (array) (container &environment env)
-  (with-array-info (elt-type dim) container env
-    `(the (values,elt-type &optional)
-          (progn
-            ,(cond ((eql dim 'cl:*)
-                    (warn "An array should be of rank 1"))
-                   ((< 1 (length dim))
-                    (error "An array should be of rank 1"))
-                   (t t))
-            ,(once-only (container)
-               `(aref ,container (1- (length ,container))))))))
+(defpolymorph-compiler-macro back (array) (&whole form container &environment env)
+  (with-type-info (_ (array-type elt-type dim) env) container
+    (when-types ((array-type array)) form
+      `(the (values,elt-type &optional)
+            (progn
+              ,(cond ((eql dim 'cl:*)
+                      (warn "An array should be of rank 1"))
+                     ((< 1 (length dim))
+                      (error "An array should be of rank 1"))
+                     (t t))
+              ,(once-only (container)
+                 `(aref ,container (1- (length ,container)))))))))
 
 
 

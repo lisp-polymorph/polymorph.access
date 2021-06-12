@@ -6,7 +6,9 @@
   :license  "CCA"
   :version "0.5"
   :serial t
-  :depends-on (#:polymorph.utility)
+  :depends-on (#:polymorphic-functions
+               #:compiler-macro
+               #:introspect-ctype)
   :components ((:module
                 "src"
                 :serial t
@@ -20,7 +22,7 @@
   :description "Unit tests for polymorph.access"
   :license "MIT"
   :serial t
-  :depends-on (#:polymorph.access #:fiveam)
+  :depends-on (#:polymorph.access #:polymorph.macros #:fiveam)
   :components ((:module
                 "test"
                 :serial t
