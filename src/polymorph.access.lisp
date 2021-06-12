@@ -28,7 +28,7 @@
 
 
 (defpolymorph-compiler-macro at (array &rest) (&whole form array &rest indexes &environment env)
-  (with-type-info (_ (array-type elt-type) env) array
+  (with-type-info (_ (array-type &optional elt-type) env) array
     (when-types ((array-type array)) form
       (if (constantp (length indexes) env)
           (let ((error-policy (member :error indexes)))
@@ -65,7 +65,7 @@
 (defpolymorph-compiler-macro (setf at) (t array &rest) (&whole form
                                                                new array &rest indexes
                                                                &environment env)
-  (with-type-info (_ (array-type elt-type) env) array
+  (with-type-info (_ (array-type &optional elt-type) env) array
     (when-types ((array-type array)) form
       (let ((new-type (with-type-info (type () env) new type)))
         (cond ((not (subtypep new-type elt-type env))
@@ -298,7 +298,7 @@
    (row-major-aref array index))
 
 (defpolymorph-compiler-macro row-major-at (array ind) (&whole form array index &environment env)
-  (with-type-info (_ (array-type elt-type) env) array
+  (with-type-info (_ (array-type &optional elt-type) env) array
     (when-types ((array-type array)) form
       `(the ,elt-type (cl:row-major-aref ,array ,index)))))
 
@@ -332,7 +332,7 @@
   (aref container 0))
 
 (defpolymorph-compiler-macro front (array) (&whole form container &environment env)
-  (with-type-info (_ (array-type elt-type dim) env) container
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
     (when-types ((array-type array)) form
       `(the (values ,elt-type &optional)
             (progn
@@ -353,7 +353,7 @@
               (aref container (1- (length container))))
 
 (defpolymorph-compiler-macro back (array) (&whole form container &environment env)
-  (with-type-info (_ (array-type elt-type dim) env) container
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
     (when-types ((array-type array)) form
       `(the (values,elt-type &optional)
             (progn
