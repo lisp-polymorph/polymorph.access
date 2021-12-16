@@ -15,7 +15,7 @@
   (let ((error-policy (member :error indexes)))
     (if error-policy
 
-        (let ((indexes (nbutlast (nbutlast indexes))))
+        (let ((indexes (butlast (butlast indexes))))
           (if (second error-policy)
               (apply #'aref array indexes)
               (if (apply #'array-in-bounds-p array indexes)
@@ -51,7 +51,7 @@
  (let ((error-policy (member :error indexes)))
     (if error-policy
 
-        (let ((indexes (nbutlast (nbutlast indexes))))
+        (let ((indexes (butlast (butlast indexes))))
           (if (second error-policy)
               (setf (apply #'aref array indexes) new)
               (if (apply #'array-in-bounds-p array indexes)
