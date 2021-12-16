@@ -347,15 +347,14 @@
   :documentation "Return T if container is empty, and NIL otherwise.")
 
 (defpolymorph emptyp ((object vector)) (values boolean &optional)
-              (= 0 (cl:length object)))
-
+  (= 0 (cl:length object)))
 
 (defpolymorph emptyp ((object list)) (values boolean &optional)
-              (null object))
+  (null object))
 
 
 (defpolymorph emptyp ((object hash-table)) (values boolean &optional)
-              (= 0 (hash-table-count object)))
+  (= 0 (hash-table-count object)))
 
 
 
