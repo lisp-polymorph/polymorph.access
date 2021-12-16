@@ -3,7 +3,7 @@
 (asdf:defsystem #:polymorph.access
   :description "Access functions for polymorph.stl"
   :author "Commander Thrashdin"
-  :license  "CCA"
+  :license  "MIT"
   :version "0.5"
   :serial t
   :depends-on (#:polymorphic-functions

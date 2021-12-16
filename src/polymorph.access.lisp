@@ -96,105 +96,79 @@
 ;; ???
 
 
-(defpolymorph at ((list list) &rest indexes) (values t &optional boolean)
+(defpolymorph at ((list list) (index ind) &key ((error boolean) t))
+    (values t &optional boolean)
+  (let* ((list (nthcdr index list)))
+    (if error
+        (if list
+            (first list)
+            (error 'simple-error :format-control "Index not in list bounds"))
+        (if list
+            (values (first list) t)
+            (values nil nil)))))
+
+
+#||
+(defpolymorph-compiler-macro at (list ind) (&whole form list ind &environment env)
   (let ((error-policy (member :error indexes)))
-    (if error-policy
-        (let* ((index (first indexes))
-               (list (nthcdr index list)))
-            (if (second error-policy)
-                (if list
-                    (first list)
-                    (error 'simple-error :format-control "Index not in list bounds"))
-                (if list
-                    (values (first list) t)
-                    (values nil nil))))
+    (let ((index (gensym "I"))
+          (listname (gensym "LIST")))
+      (if error-policy
 
-        (let* ((index (first indexes))
-               (list (nthcdr index list)))
-          (if list
-              (first list)
-              (error 'simple-error :format-control "Index not in list bounds"))))))
-
-
-
-
-(defpolymorph-compiler-macro at (list &rest) (&whole form list &rest indexes &environment env)
-  (if (constantp (length indexes) env)
-
-      (let ((error-policy (member :error indexes)))
-        (let ((index (gensym "I"))
-              (listname (gensym "LIST")))
-          (if error-policy
-
-              `(let* ((,index ,(first indexes))
-                      (,listname (nthcdr ,index ,list)))
-                 (if ,(second error-policy)
-                     (if ,listname
-                         (first ,listname)
-                         (error 'simple-error :format-control "Index not in list bounds"))
-                     (if ,listname
-                         (values (first ,listname) t)
-                         (values nil nil))))
-
-              `(let* ((,index ,(first indexes))
-                      (,listname (nthcdr ,index ,list)))
+          `(let* ((,index ,ind)
+                  (,listname (nthcdr ,index ,list)))
+             (if ,(second error-policy)
                  (if ,listname
                      (first ,listname)
-                     (error 'simple-error :format-control "Index not in list bounds"))))))
+                     (error 'simple-error :format-control "Index not in list bounds"))
+                 (if ,listname
+                     (values (first ,listname) t)
+                     (values nil nil))))
+
+          `(let* ((,index ,ind)
+                  (,listname (nthcdr ,index ,list)))
+             (if ,listname
+                 (first ,listname)
+                 (error 'simple-error :format-control "Index not in list bounds")))))))
+||#
 
 
-      form))
+(defpolymorph (setf at) ((new t) (list list) (index ind) &key ((error boolean) t))
+    (values t &optional boolean)
+  (let* ((list (nthcdr index list)))
+    (if error
+        (if list
+            (setf (first list) new)
+            (error 'simple-error :format-control "Index not in list bounds"))
+        (if list
+            (values (setf (first list) new) t)
+            (values nil nil)))))
 
-
-(defpolymorph (setf at) ((new t) (list list) &rest indexes) (values t &optional boolean)
+#||
+(defpolymorph-compiler-macro (setf at) (t list ind) (&whole form
+                                                            new list ind
+                                                            &environment env)
   (let ((error-policy (member :error indexes)))
-    (if error-policy
-        (let* ((index (first indexes))
-               (list (nthcdr index list)))
-          (if (second error-policy)
-              (if list
-                  (setf (first list) new)
-                  (error 'simple-error :format-control "Index not in list bounds"))
-              (if list
-                  (values (setf (first list) new) t)
-                  (values nil nil))))
+    (let ((index (gensym "I"))
+          (listname (gensym "LIST")))
+      (if error-policy
 
-        (let* ((index (first indexes))
-               (list (nthcdr index list)))
-          (if list
-              (setf (first list) new)
-              (error 'simple-error :format-control "Index not in list bounds"))))))
-
-
-
-(defpolymorph-compiler-macro (setf at) (t list &rest) (&whole form
-                                                              new list &rest indexes
-                                                              &environment env)
-  (if (constantp (length indexes) env)
-
-      (let ((error-policy (member :error indexes)))
-        (let ((index (gensym "I"))
-              (listname (gensym "LIST")))
-          (if error-policy
-
-              `(let* ((,index ,(first indexes))
-                      (,listname (nthcdr ,index ,list)))
-                 (if ,(second error-policy)
-                     (if ,listname
-                         (setf (first ,listname) ,new)
-                         (error 'simple-error :format-control "Index not in list bounds"))
-                     (if ,listname
-                         (values (setf (first ,listname) ,new) t)
-                         (values nil nil))))
-
-              `(let* ((,index ,(first indexes))
-                      (,listname (nthcdr ,index ,list)))
+          `(let* ((,index ,ind)
+                  (,listname (nthcdr ,index ,list)))
+             (if ,(second error-policy)
                  (if ,listname
                      (setf (first ,listname) ,new)
-                     (error 'simple-error :format-control "Index not in list bounds"))))))
+                     (error 'simple-error :format-control "Index not in list bounds"))
+                 (if ,listname
+                     (values (setf (first ,listname) ,new) t)
+                     (values nil nil))))
 
-
-      form))
+          `(let* ((,index ,ind)
+                  (,listname (nthcdr ,index ,list)))
+             (if ,listname
+                 (setf (first ,listname) ,new)
+                 (error 'simple-error :format-control "Index not in list bounds")))))))
+||#
 
 
 
