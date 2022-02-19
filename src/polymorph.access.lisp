@@ -90,11 +90,6 @@
 
 
 
-;; To be or not to be
-;; (assert (not (cdr indexes)) nil 'simple-error :format-control "List access takes 1 index")
-;; or something like this
-;; ???
-
 
 (defpolymorph at ((list list) (index ind) &key ((error boolean) t))
     (values t &optional boolean)
@@ -378,12 +373,24 @@
 (defpolymorph capacity ((object array)) (values ind &optional)
   (cl:array-total-size object))
 
+(declaim (inline list-len))
+(defun list-len (object)
+  (declare (list object))
+  (let ((count 0)
+        (start object))
+    (declare (type ind count))
+    (loop :while object
+          :do (incf count)
+              (setf object (cdr object))
+          :when (eq object start)
+            :do (return))
+    count))
+
 (defpolymorph size ((object list)) (values ind &optional)
-  (cl:list-length object))
+  (list-len object))
 
 (defpolymorph capacity ((object list)) (values ind &optional)
-  (cl:list-length object))
-
+  (list-len object))
 
 (defpolymorph size ((object hash-table)) (values ind &optional)
   (hash-table-count object))

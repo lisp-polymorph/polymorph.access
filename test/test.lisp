@@ -73,7 +73,6 @@
     (5 (capacity '(1 2 3 4 5)))
     (3 (capacity (list 1 2 3)))))
 
-
 ;;;; Vectors (Single-dimensional arrays)
 
 (test-optimize vector-at
