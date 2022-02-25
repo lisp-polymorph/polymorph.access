@@ -35,10 +35,10 @@
 
             (if error-policy
                 (let ((indexes (butlast (butlast indexes))))
-                  (if (second error-policy)
-                      `(the (values ,elt-type &optional)
+                  `(if ,(second error-policy)
+                       (the (values ,elt-type &optional)
                             (aref ,array ,@indexes))
-                      `(the (values (or ,elt-type null) boolean &optional)
+                       (the (values (or ,elt-type null) boolean &optional)
                             (if (array-in-bounds-p ,array ,@indexes)
                                 (values (aref ,array ,@indexes) t)
                                 (values nil nil)))))
@@ -75,10 +75,10 @@
                (let ((error-policy (member :error indexes)))
                  (if error-policy
                      (let ((indexes (butlast (butlast indexes))))
-                       (if (second error-policy)
-                           `(the (values ,elt-type &optional)
+                       `(if ,(second error-policy)
+                            (the (values ,elt-type &optional)
                                  (funcall #'(setf aref) ,new ,array ,@indexes))
-                           `(the (values (or ,elt-type null) boolean &optional)
+                            (the (values (or ,elt-type null) boolean &optional)
                                  (if (array-in-bounds-p ,array ,@indexes)
                                      (values (funcall #'(setf aref) ,new ,array ,@indexes) t)
                                      (values nil nil)))))

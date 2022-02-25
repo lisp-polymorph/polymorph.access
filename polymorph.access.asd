@@ -7,7 +7,6 @@
   :version "0.5"
   :serial t
   :depends-on (#:polymorphic-functions
-               #:compiler-macro
                #:introspect-ctype)
   :components ((:module
                 "src"
