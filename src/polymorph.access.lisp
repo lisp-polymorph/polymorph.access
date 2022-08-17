@@ -191,7 +191,7 @@
         (let ((index (gensym "I")) (res (gensym "RES")) (ok (gensym "OK")))
           (if error-policy
 
-              `(let ((,index (first ,indexes)))
+              `(let ((,index ,(first indexes)))
                  (if ,(second error-policy)
                      (multiple-value-bind (,res ,ok) (gethash ,index ,ht)
                        (if ,ok
@@ -199,7 +199,7 @@
                            (error 'simple-error :format-control "Key not found")))
                      (gethash ,index ,ht)))
 
-              `(let ((,index (first ,indexes)))
+              `(let ((,index ,(first indexes)))
                  (gethash ,index ,ht)))))
 
       form))
