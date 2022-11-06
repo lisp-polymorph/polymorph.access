@@ -3,63 +3,58 @@
 (in-package #:polymorph.access)
 
 
-
 ;;; At
 (define-polymorphic-function at (container &rest keys) :overwrite t
   :documentation "Return the element of the container specified by the keys.")
 (define-polymorphic-function (setf at) (new container &rest keys) :overwrite t
   :documentation "Setf the element of the container, specified by the keys, to new.")
+(define-polymorphic-function at-safe (container &rest keys) :overwrite t
+  :documentation "Return the element of the container specified by the keys.")
+(define-polymorphic-function (setf at-safe) (new container &rest keys) :overwrite t
+  :documentation "Setf the element of the container, specified by the keys, to new.")
 
 
-(defpolymorph (at :inline t) ((array array) &rest indexes) (values t &optional boolean)
-  (let ((error-policy (member :error indexes)))
-    (if error-policy
+(defpolymorph (at :inline t) ((array array) &rest indexes) (values t &optional)
+  (apply #'aref array indexes))
 
-        (let ((indexes (butlast (butlast indexes))))
-          (if (second error-policy)
-              (apply #'aref array indexes)
-              (if (apply #'array-in-bounds-p array indexes)
-                  (values (apply #'aref array indexes) t)
-                  (values nil nil))))
-
-        (apply #'aref array indexes))))
-
-
+(defpolymorph (at-safe :inline t) ((array array) &rest indexes) (values t boolean &optional)
+  (if (apply #'array-in-bounds-p array indexes)
+      (values (apply #'aref array indexes) t)
+      (values nil nil)))
 
 
 (defpolymorph-compiler-macro at (array &rest) (&whole form array &rest indexes &environment env)
   (with-type-info (_ (array-type &optional elt-type) env) array
     (when-types ((array-type array)) form
       (if (constantp (length indexes) env)
-          (let ((error-policy (member :error indexes)))
+          `(the (values ,elt-type &optional) (aref ,array ,@indexes))
+          `(the (values ,elt-type &optional) ,form)))))
 
-            (if error-policy
-                (let ((indexes (butlast (butlast indexes))))
-                  `(if ,(second error-policy)
-                       (the (values ,elt-type &optional)
-                            (aref ,array ,@indexes))
-                       (the (values (or ,elt-type null) boolean &optional)
-                            (if (array-in-bounds-p ,array ,@indexes)
-                                (values (aref ,array ,@indexes) t)
-                                (values nil nil)))))
-                `(the (values ,elt-type &optional) (aref ,array ,@indexes))))
-
+(defpolymorph-compiler-macro at-safe (array &rest) (&whole form array &rest indexes &environment env)
+  (with-type-info (_ (array-type &optional elt-type) env) array
+    (when-types ((array-type array)) form
+      (if (constantp (length indexes) env)
+          `(the (values (or ,elt-type null) boolean &optional)
+                (if (array-in-bounds-p ,array ,@indexes)
+                    (values (aref ,array ,@indexes) t)
+                    (values nil nil)))
           `(the (values (or ,elt-type null) &optional boolean) ,form)))))
 
 
-(defpolymorph ((setf at) :inline t) ((new t) (array array) &rest indexes) (values t &optional boolean)
- (let ((error-policy (member :error indexes)))
-    (if error-policy
 
-        (let ((indexes (butlast (butlast indexes))))
-          (if (second error-policy)
-              (setf (apply #'aref array indexes) new)
-              (if (apply #'array-in-bounds-p array indexes)
-                  (values (setf (apply #'aref array indexes) new) t)
-                  (values nil nil))))
-
+(defpolymorph ((setf at) :inline t) ((new t) (array array) &rest indexes) (values t &optional)
+  (let ((new-type (type-of new)))
+    (if (not (subtypep new-type (array-element-type array)))
+        (error 'type-error :expected-type (array-element-type array) :datum new)
         (setf (apply #'aref array indexes) new))))
 
+(defpolymorph ((setf at-safe) :inline t) ((new t) (array array) &rest indexes) (values t boolean &optional)
+  (let ((new-type (type-of new)))
+    (if (not (subtypep new-type (array-element-type array)))
+        (error 'type-error :expected-type (array-element-type array) :datum new)
+        (if (apply #'array-in-bounds-p array indexes)
+            (values (setf (apply #'aref array indexes) new) t)
+            (values nil nil)))))
 
 
 (defpolymorph-compiler-macro (setf at) (t array &rest) (&whole form
@@ -72,176 +67,87 @@
                (error 'type-error :expected-type elt-type :datum new))
 
               ((constantp (length indexes) env)
-               (let ((error-policy (member :error indexes)))
-                 (if error-policy
-                     (let ((indexes (butlast (butlast indexes))))
-                       `(if ,(second error-policy)
-                            (the (values ,elt-type &optional)
-                                 (funcall #'(setf aref) ,new ,array ,@indexes))
-                            (the (values (or ,elt-type null) boolean &optional)
-                                 (if (array-in-bounds-p ,array ,@indexes)
-                                     (values (funcall #'(setf aref) ,new ,array ,@indexes) t)
-                                     (values nil nil)))))
-                     `(the (values ,elt-type &optional)
-                           (funcall #'(setf aref) ,new ,array ,@indexes)))))
-
+               `(the (values ,new-type &optional)
+                    (funcall #'(setf aref) ,new ,array ,@indexes)))
               (t
-               `(the (values (or ,elt-type null) &optional boolean) ,form)))))))
+               `(the (values new-type &optional) ,form)))))))
 
-
-
-
-(defpolymorph at ((list list) (index ind) &key ((error boolean) t))
-    (values t &optional boolean)
-  (let* ((list (nthcdr index list)))
-    (if error
-        (if list
-            (first list)
-            (error 'simple-error :format-control "Index not in list bounds"))
-        (if list
-            (values (first list) t)
-            (values nil nil)))))
-
-
-#||
-(defpolymorph-compiler-macro at (list ind) (&whole form list ind &environment env)
-  (let ((error-policy (member :error indexes)))
-    (let ((index (gensym "I"))
-          (listname (gensym "LIST")))
-      (if error-policy
-
-          `(let* ((,index ,ind)
-                  (,listname (nthcdr ,index ,list)))
-             (if ,(second error-policy)
-                 (if ,listname
-                     (first ,listname)
-                     (error 'simple-error :format-control "Index not in list bounds"))
-                 (if ,listname
-                     (values (first ,listname) t)
-                     (values nil nil))))
-
-          `(let* ((,index ,ind)
-                  (,listname (nthcdr ,index ,list)))
-             (if ,listname
-                 (first ,listname)
-                 (error 'simple-error :format-control "Index not in list bounds")))))))
-||#
-
-
-(defpolymorph (setf at) ((new t) (list list) (index ind) &key ((error boolean) t))
-    (values t &optional boolean)
-  (let* ((list (nthcdr index list)))
-    (if error
-        (if list
-            (setf (first list) new)
-            (error 'simple-error :format-control "Index not in list bounds"))
-        (if list
-            (values (setf (first list) new) t)
-            (values nil nil)))))
-
-#||
-(defpolymorph-compiler-macro (setf at) (t list ind) (&whole form
-                                                            new list ind
-                                                            &environment env)
-  (let ((error-policy (member :error indexes)))
-    (let ((index (gensym "I"))
-          (listname (gensym "LIST")))
-      (if error-policy
-
-          `(let* ((,index ,ind)
-                  (,listname (nthcdr ,index ,list)))
-             (if ,(second error-policy)
-                 (if ,listname
-                     (setf (first ,listname) ,new)
-                     (error 'simple-error :format-control "Index not in list bounds"))
-                 (if ,listname
-                     (values (setf (first ,listname) ,new) t)
-                     (values nil nil))))
-
-          `(let* ((,index ,ind)
-                  (,listname (nthcdr ,index ,list)))
-             (if ,listname
-                 (setf (first ,listname) ,new)
-                 (error 'simple-error :format-control "Index not in list bounds")))))))
-||#
-
-
-
-(defpolymorph at ((ht hash-table) &rest indexes) (values t &optional boolean)
-  (let ((error-policy (member :error indexes)))
-    (if error-policy
-
-        (let ((index (first indexes)))
-          (if (second error-policy)
-              (multiple-value-bind (res ok) (gethash index ht)
-                (if ok
-                    res
-                    (error 'simple-error :format-control "Key not found")))
-              (gethash index ht)))
-
-        (let ((index (first indexes)))
-          (gethash index ht)))))
-
-
-
-
-(defpolymorph-compiler-macro at (hash-table &rest) (&whole form ht &rest indexes &environment env)
-  (if (constantp (length indexes) env)
-      (let ((error-policy (member :error indexes)))
-        (let ((index (gensym "I")) (res (gensym "RES")) (ok (gensym "OK")))
-          (if error-policy
-
-              `(let ((,index (first ,indexes)))
-                 (if ,(second error-policy)
-                     (multiple-value-bind (,res ,ok) (gethash ,index ,ht)
-                       (if ,ok
-                           ,res
-                           (error 'simple-error :format-control "Key not found")))
-                     (gethash ,index ,ht)))
-
-              `(let ((,index (first ,indexes)))
-                 (gethash ,index ,ht)))))
-
-      form))
-
-(defpolymorph (setf at) ((new t) (ht hash-table) &rest indexes) (values t &optional boolean)
-  (let ((error-policy (member :error indexes)))
-    (if error-policy
-
-        (let ((index (first indexes)))
-          (if (second error-policy)
-              (multiple-value-bind (_ ok) (gethash index ht)
-                (declare (ignore _))
-                (if ok
-                    (setf (gethash index ht) new)
-                    (error 'simple-error :format-control "Key not found")))
-              (values (setf (gethash index ht) new) t)))
-
-        (let ((index (first indexes)))
-          (values (setf (gethash index ht) new) t)))))
-
-
-(defpolymorph-compiler-macro (setf at) (t hash-table &rest) (&whole form
-                                                                    new ht &rest indexes
+(defpolymorph-compiler-macro (setf at-safe) (t array &rest) (&whole form
+                                                                    new array &rest indexes
                                                                     &environment env)
-  (if (constantp (length indexes) env)
-      (let ((error-policy (member :error indexes)))
-        (let ((index (gensym "I")) (_ (gensym "_")) (ok (gensym "OK")))
-          (if error-policy
+  (with-type-info (_ (array-type &optional elt-type) env) array
+    (when-types ((array-type array)) form
+      (let ((new-type (with-type-info (type () env) new type)))
+        (cond ((not (subtypep new-type elt-type env))
+               (error 'type-error :expected-type elt-type :datum new))
 
-              `(let ((,index (first ,indexes)))
-                 (if ,(second error-policy)
-                     (multiple-value-bind (,_ ,ok) (gethash ,index ,ht)
-                       (declare (ignore ,_))
-                       (if ,ok
-                           (setf (gethash ,index ,ht) ,new)
-                           (error 'simple-error :format-control "Key not found")))
-                     (values (setf (gethash ,index ,ht) ,new) t)))
+             ((constantp (length indexes) env)
+              `(if (array-in-bounds-p ,array ,@indexes)
+                   (values (the (values ,new-type &optional)
+                                (funcall #'(setf aref) ,new ,array ,@indexes))
+                           t)
+                   (values nil nil)))
+             (t
+              `(the (values (or ,new-type null) boolean &optional) ,form)))))))
 
-              `(let ((,index (first ,indexes)))
-                 (values (setf (gethash ,index ,ht) ,new) t)))))
 
-      form))
+
+
+(defpolymorph (at :inline t) ((list list) (index ind))
+    (values t &optional)
+  (let* ((list (nthcdr index list)))
+     (if list
+         (first list)
+         (error 'simple-error :format-control "Index not in list bounds"))))
+
+
+(defpolymorph (at-safe :inline t) ((list list) (index ind))
+    (values t boolean &optional)
+  (let* ((list (nthcdr index list)))
+    (if list
+        (values (first list) t)
+        (values nil nil))))
+
+
+
+(defpolymorph ((setf at) :inline t) ((new t) (list list) (index ind))
+    (values t &optional)
+  (let* ((list (nthcdr index list)))
+    (if list
+        (setf (first list) new)
+        (error 'simple-error :format-control "Index not in list bounds"))))
+
+
+(defpolymorph ((setf at-safe) :inline t) ((new t) (list list) (index ind))
+    (values t &optional boolean)
+  (let* ((list (nthcdr index list)))
+    (if list
+        (values (setf (first list) new) t)
+        (values nil nil))))
+
+
+
+(defpolymorph (at :inline t) ((ht hash-table) key) (values t &optional)
+  (multiple-value-bind (res ok) (gethash key ht)
+    (if ok
+        res
+        (error 'simple-error :format-control "Key not found"))))
+
+(defpolymorph (at-safe :inline t) ((ht hash-table) key) (values t boolean &optional)
+  (gethash key ht))
+
+
+
+(defpolymorph ((setf at) :inline t) ((new t) (ht hash-table) key) (values t &optional)
+  (multiple-value-bind (_ ok) (gethash key ht)
+    (declare (ignore _))
+    (if ok
+        (setf (gethash key ht) new)
+        (error 'simple-error :format-control "Key not found"))))
+
+(defpolymorph ((setf at-safe) :inline t) ((new t) (ht hash-table) key) (values t boolean &optional)
+  (values (setf (gethash key ht) new) t))
+
 
 
 (define-setf-expander at (container &rest indexes &environment env)
@@ -253,11 +159,23 @@
               vals
               newval
               `(funcall #'(setf at) ,@newval
-                        (the ,container-type ,getter) ,@indexes)
+                       (the ,container-type ,getter) ,@indexes)
               `(at (the ,container-type ,getter) ,@indexes)))))
 
+(define-setf-expander at-safe (container &rest indexes &environment env)
+  (with-type-info (container-type () env) container
+    (multiple-value-bind (dummies vals newval setter getter)
+        (get-setf-expansion container env)
+      (declare (ignorable setter))
+      (values dummies
+              vals
+              newval
+              `(funcall #'(setf at-safe) ,@newval
+                       (the ,container-type ,getter) ,@indexes)
+              `(at-safe (the ,container-type ,getter) ,@indexes)))))
 
 
+;; TODO Do I even need this?
 (define-polymorphic-function row-major-at (container key) :overwrite t
   :documentation "Typed row-major-aref.")
 (define-polymorphic-function (setf row-major-at) (new container key) :overwrite t
@@ -281,59 +199,222 @@
   :documentation "Setf the first element of the containter to new.")
 (define-polymorphic-function (setf back) (new container) :overwrite t
   :documentation "Setf the last element of the container to new.")
-
-(defpolymorph front ((container list)) t
-  (first container))
-
-
-(defpolymorph (setf front) ((new t) (container list)) t
-  (setf (first container) new))
-
-(defpolymorph back ((container list)) t
-  (car (last container)))
-
-(defpolymorph (setf back) ((new t) (container list)) t
-  (setf (first (last container)) new))
+(define-polymorphic-function back-safe (container) :overwrite t
+  :documentation "Return last element of the container.")
+(define-polymorphic-function front-safe (container) :overwrite t
+  :documentation "Return first of the container.")
+(define-polymorphic-function (setf front-safe) (new container) :overwrite t
+  :documentation "Setf the first element of the containter to new.")
+(define-polymorphic-function (setf back-safe) (new container) :overwrite t
+  :documentation "Setf the last element of the container to new.")
 
 
-(defpolymorph front ((container array)) t
+(defpolymorph (front :inline t) ((container list)) (values t &optional)
+  (if container
+      (first container)
+      (error 'simple-error :format-control "List is empty")))
+
+(defpolymorph (front-safe :inline t) ((container list)) (values t boolean &optional)
+  (if container
+      (values (first container) t)
+      (values nil nil)))
+
+(defpolymorph ((setf front) :inline t) ((new t) (container list)) (values t &optional)
+  (if container
+      (setf (first container) new)
+      (error 'simple-error :format-control "List is empty")))
+
+(defpolymorph ((setf front-safe) :inline t) ((new t) (container list)) (values t boolean &optional)
+ (if container
+     (values (setf (first container) new) t)
+     (values nil nil)))
+
+(defpolymorph (back :inline t) ((container list)) (values t &optional)
+  (if container
+      (first (last container))
+      (error 'simple-error :format-control "List is empty")))
+
+(defpolymorph (back-safe :inline t) ((container list)) (values t boolean &optional)
+  (if container
+      (values (first (last container)) t)
+      (values nil nil)))
+
+(defpolymorph ((setf back) :inline t) ((new t) (container list)) (values t &optional)
+  (if container
+      (setf (first (last container)) new)
+      (error 'simple-error :format-control "List is empty")))
+
+(defpolymorph ((setf back) :inline t) ((new t) (container list)) (values t boolean &optional)
+  (if container
+      (values (setf (first (last container)) new) t)
+      (values nil nil)))
+
+(defpolymorph (front :inline t) ((container array)) (values t &optional)
+   (assert (= 1 (array-rank container)))
+   (aref container 0))
+
+(defpolymorph (front-safe :inline t) ((container array)) (values t boolean &optional)
   (assert (= 1 (array-rank container)))
-  (aref container 0))
+  (if (= 0 (length container))
+      (values nil nil)
+      (values (aref container 0) t)))
 
-(defpolymorph-compiler-macro front (array) (&whole form container &environment env)
+(defpolymorph-compiler-macro front (array)
+    (&whole form container &environment env)
   (with-type-info (_ (array-type &optional elt-type dim) env) container
     (when-types ((array-type array)) form
+      (cond ((eql dim 'cl:*)
+             (warn "An array should be of rank 1"))
+            ((< 1 (length dim))
+             (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
       `(the (values ,elt-type &optional)
-            (progn
-              ,(cond ((eql dim 'cl:*)
-                      (warn "An array should be of rank 1"))
-                     ((< 1 (length dim))
-                      (error "An array should be of rank 1")) ;;FIXME this doesn't trigger
-                     (t t)) ;;instead sbcl check the aref against dimensions
-              (aref ,container 0))))))                         ;; Not great, not terrible
+            (aref ,container 0)))))
 
-(defpolymorph (setf front) ((new t) (container array)) t
+(defpolymorph-compiler-macro front-safe (array)
+    (&whole form container &environment env)
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
+    (when-types ((array-type array)) form
+      (cond ((eql dim 'cl:*)
+             (warn "An array should be of rank 1"))
+            ((< 1 (length dim))
+             (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+      `(the (values (or ,elt-type null) boolean &optional)
+            ,(once-only (container)
+               `(if (= 0 (length ,container))
+                    (values nil nil)
+                    (values (aref ,container 0) t)))))))
+
+(defpolymorph ((setf front) :inline t) ((new t) (container array)) (values t &optional)
+  (assert (= 1 (array-rank container)))
   (setf (aref container 0) new))
 
-;; TODO add compiler macros for setf front/back
 
-(defpolymorph back ((container array)) t
-              (assert (= 1 (array-rank container)))
-              (aref container (1- (length container))))
+(defpolymorph ((setf front-safe) :inline t) ((new t) (container array)) (values t boolean &optional)
+  (assert (= 1 (array-rank container)))
+  (if (= 0 (length container))
+      (values nil nil)
+      (values (setf (aref container 0) new) t)))
 
-(defpolymorph-compiler-macro back (array) (&whole form container &environment env)
+
+(defpolymorph-compiler-macro (setf front) (t array)
+    (&whole form new container &environment env)
   (with-type-info (_ (array-type &optional elt-type dim) env) container
     (when-types ((array-type array)) form
-      `(the (values,elt-type &optional)
-            (progn
-              ,(cond ((eql dim 'cl:*)
-                      (warn "An array should be of rank 1"))
-                     ((< 1 (length dim))
-                      (error "An array should be of rank 1"))
-                     (t t))
-              ,(once-only (container)
-                 `(aref ,container (1- (length ,container)))))))))
+      (let ((new-type (with-type-info (type () env) new type)))
+        (cond ((not (subtypep new-type elt-type env))
+               (error 'type-error :expected-type elt-type :datum new))
+              ((eql dim 'cl:*)
+               (warn "An array should be of rank 1"))
+              ((< 1 (length dim))
+               (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+        `(the (values ,new-type &optional)
+              (setf (aref ,container 0) ,new))))))
 
+
+(defpolymorph-compiler-macro (setf front) (t array)
+    (&whole form new container &environment env)
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
+    (when-types ((array-type array)) form
+      (let ((new-type (with-type-info (type () env) new type)))
+        (cond ((not (subtypep new-type elt-type env))
+               (error 'type-error :expected-type elt-type :datum new))
+              ((eql dim 'cl:*)
+               (warn "An array should be of rank 1"))
+              ((< 1 (length dim))
+               (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+        `(the (values (or ,new-type null) boolean &optional)
+              ,(once-only (container)
+                 `(if (= 0 (length ,container))
+                      (values nil nil)
+                      (values (setf (aref ,container 0) ,new) t))))))))
+
+
+(defpolymorph (back :inline t) ((container array)) (values t &optional)
+   (assert (= 1 (array-rank container)))
+   (aref container (- (length container) 1)))
+
+(defpolymorph (back-safe :inline t) ((container array)) (values t boolean &optional)
+  (assert (= 1 (array-rank container)))
+  (let ((l (length container)))
+    (if (= 0 l)
+        (values nil nil)
+        (values (aref container (- l 1)) t))))
+
+(defpolymorph-compiler-macro back (array)
+    (&whole form container &environment env)
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
+    (when-types ((array-type array)) form
+      (cond ((eql dim 'cl:*)
+             (warn "An array should be of rank 1"))
+            ((< 1 (length dim))
+             (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+      (once-only (container)
+        `(the (values ,elt-type &optional)
+          (aref ,container (- (length ,container) 1)))))))
+
+(defpolymorph-compiler-macro back-safe (array)
+    (&whole form container &environment env)
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
+    (when-types ((array-type array)) form
+      (cond ((eql dim 'cl:*)
+             (warn "An array should be of rank 1"))
+            ((< 1 (length dim))
+             (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+      (let ((l (gensym "L")))
+        `(the (values (or ,elt-type null) boolean &optional)
+          ,(once-only (container)
+             `(let ((,l (length ,container)))
+                (if (= 0 ,l)
+                    (values nil nil)
+                    (values (aref ,container (- ,l 1)) t)))))))))
+
+(defpolymorph ((setf back) :inline t) ((new t) (container array)) (values t &optional)
+  (assert (= 1 (array-rank container)))
+  (setf (aref container (- (length container) 1)) new))
+
+
+(defpolymorph ((setf back-safe) :inline t) ((new t) (container array)) (values t boolean &optional)
+  (assert (= 1 (array-rank container)))
+  (let ((l (length container)))
+    (if (= 0 l)
+        (values nil nil)
+        (values (setf (aref container (- l 1)) new) t))))
+
+
+(defpolymorph-compiler-macro (setf back) (t array)
+    (&whole form new container &environment env)
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
+    (when-types ((array-type array)) form
+      (let ((new-type (with-type-info (type () env) new type)))
+        (cond ((not (subtypep new-type elt-type env))
+               (error 'type-error :expected-type elt-type :datum new))
+              ((eql dim 'cl:*)
+               (warn "An array should be of rank 1"))
+              ((< 1 (length dim))
+               (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+        `(the (values ,new-type &optional)
+          ,(once-only (container)
+             `(setf (aref ,container (- (length ,container) 1)) ,new)))))))
+
+
+(defpolymorph-compiler-macro (setf back-safe) (t array)
+    (&whole form new container &environment env)
+  (with-type-info (_ (array-type &optional elt-type dim) env) container
+    (when-types ((array-type array)) form
+      (let ((new-type (with-type-info (type () env) new type)))
+        (cond ((not (subtypep new-type elt-type env))
+               (error 'type-error :expected-type elt-type :datum new))
+              ((eql dim 'cl:*)
+               (warn "An array should be of rank 1"))
+              ((< 1 (length dim))
+               (error "An array should be of rank 1"))) ;;FIXME this doesn't trigger
+        (let ((l (gensym "L")))
+          `(the (values (or ,new-type null) boolean &optional)
+            ,(once-only (container)
+               `(let ((,l (length ,container)))
+                  (if (= 0 ,l)
+                      (values nil nil)
+                      (values (setf (aref ,container (- ,l 1)) ,new) t))))))))))
 
 
 
@@ -373,28 +454,14 @@
 (defpolymorph capacity ((object array)) (values ind &optional)
   (cl:array-total-size object))
 
-(declaim (inline list-len))
-(defun list-len (object)
-  (declare (list object))
-  (let ((count 0)
-        (start object))
-    (declare (type ind count))
-    (loop :while object
-          :do (incf count)
-              (setf object (cdr object))
-          :when (eq object start)
-            :do (return))
-    count))
+(defpolymorph size ((object list)) (values (or null ind) &optional)
+  (list-length object))
 
-(defpolymorph size ((object list)) (values ind &optional)
-  (list-len object))
-
-(defpolymorph capacity ((object list)) (values ind &optional)
-  (list-len object))
+(defpolymorph capacity ((object list)) (values (or null ind) &optional)
+  (list-length object))
 
 (defpolymorph size ((object hash-table)) (values ind &optional)
   (hash-table-count object))
 
 (defpolymorph capacity ((object hash-table)) (values ind &optional)
   (hash-table-size object))
-
