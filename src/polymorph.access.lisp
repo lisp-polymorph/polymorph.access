@@ -154,27 +154,27 @@
   (with-type-info (container-type () env) container
     (multiple-value-bind (dummies vals newval setter getter)
         (get-setf-expansion container env)
-      (declare (ignorable setter))
-      (let ((dummies (or dummies (list (gensym)))))
-        (values dummies
-                (or vals (list container))
+      (declare (ignorable dummies vals getter setter))
+      (let ((dummy (gensym)))
+        (values `(,dummy)
+                (list container)
                 newval
                 `(funcall #'(setf at) ,@newval
-                         (the ,container-type ,getter) ,@indexes)
-                `(at (the ,container-type ,getter) ,@indexes))))))
+                         (the ,container-type ,dummy) ,@indexes)
+                `(at (the ,container-type ,dummy) ,@indexes))))))
 
 (define-setf-expander at-safe (container &rest indexes &environment env)
   (with-type-info (container-type () env) container
     (multiple-value-bind (dummies vals newval setter getter)
         (get-setf-expansion container env)
-      (declare (ignorable setter))
-      (let ((dummies (or dummies (list (gensym)))))
-        (values dummies
-                (or vals (list container))
+      (declare (ignorable dummies vals getter setter))
+      (let ((dummy (gensym)))
+        (values `(,dummy)
+                (list container)
                 newval
                 `(funcall #'(setf at-safe) ,@newval
-                         (the ,container-type ,getter) ,@indexes)
-                `(at-safe (the ,container-type ,getter) ,@indexes))))))
+                         (the ,container-type ,dummy) ,@indexes)
+                `(at-safe (the ,container-type ,dummy) ,@indexes))))))
 
 
 ;; TODO Do I even need this?
